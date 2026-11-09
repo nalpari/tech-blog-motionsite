@@ -1,0 +1,150 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { CATEGORIES, formatDate, readingMinutes } from '../../site';
+
+export async function getStaticPaths() {
+	const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+	return posts.map((post, i) => ({
+		params: { slug: post.id },
+		props: { post, next: posts[(i + 1) % posts.length], prev: posts[(i - 1 + posts.length) % posts.length] },
+	}));
+}
+
+const { post, next, prev } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2);
+const d = post.data;
+---
+
+<Layout title={d.title} description={d.description} image={d.cover}>
+	<div class="progress" aria-hidden="true"></div>
+
+	<article>
+		<header class="wrap head">
+			<a class="back label" href="/#index">← Index</a>
+			<p class="label kicker"><span class="dot"></span> {CATEGORIES[d.category]} · {readingMinutes(post.body)} min read</p>
+			<h1>
+				<span class="line-mask"><span style="--d:.1s">{d.title}</span></span>
+			</h1>
+			<p class="lede">{d.description}</p>
+			<div class="meta">
+				<span class="avatar" aria-hidden="true">{d.author.slice(0, 1)}</span>
+				<span class="who">{d.author}<small>{d.role}</small></span>
+				<time class="label" datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
+			</div>
+		</header>
+
+		<figure class="wrap cover">
+			<div class="cover-frame"><img src={d.cover} alt="" width="1200" height="904" /></div>
+		</figure>
+
+		<div class="wrap body">
+			{toc.length > 0 && (
+				<aside class="toc" aria-label="목차">
+					<p class="label">Contents</p>
+					<ol>
+						{toc.map((h, i) => (
+							<li><a href={`#${h.slug}`} data-toc={h.slug}><span>{String(i + 1).padStart(2, '0')}</span>{h.text}</a></li>
+						))}
+					</ol>
+				</aside>
+			)}
+			<div class="prose">
+				<Content />
+			</div>
+		</div>
+	</article>
+
+	<nav class="wrap more" aria-label="다른 글">
+		<p class="label">Keep reading</p>
+		<div class="more-grid">
+			{[prev, next].filter((p, i, a) => p.id !== post.id && a.findIndex((x) => x.id === p.id) === i).map((p) => (
+				<a class="more-card" href={`/posts/${p.id}/`}>
+					<div class="more-media"><img src={p.data.cover} alt="" loading="lazy" width="1200" height="904" /></div>
+					<span class="label">{CATEGORIES[p.data.category]}</span>
+					<span class="more-title">{p.data.title}</span>
+				</a>
+			))}
+		</div>
+	</nav>
+</Layout>
+
+<script>
+	// highlight the TOC entry for the heading currently being read
+	const links = new Map(
+		[...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')].map((a) => [a.dataset.toc!, a]),
+	);
+	const io = new IntersectionObserver(
+		(entries) => {
+			for (const e of entries) {
+				if (!e.isIntersecting) continue;
+				links.forEach((a) => a.classList.remove('active'));
+				links.get(e.target.id)?.classList.add('active');
+			}
+		},
+		{ rootMargin: '-20% 0px -70% 0px' },
+	);
+	links.forEach((_, id) => {
+		const h = document.getElementById(id);
+		if (h) io.observe(h);
+	});
+</script>
+
+<style>
+	.progress {
+		position: fixed; top: 0; left: 0; right: 0; z-index: 40; height: 2px;
+		background: var(--accent); transform-origin: 0 50%; transform: scaleX(0);
+	}
+	@supports (animation-timeline: scroll()) {
+		.progress { animation: grow linear both; animation-timeline: scroll(root); }
+		@keyframes grow { to { transform: scaleX(1); } }
+	}
+
+	.head { padding-top: clamp(140px, 18vh, 200px); max-width: 1040px; }
+	.back { display: inline-block; margin-bottom: 48px; transition: color .2s; }
+	.back:hover { color: hsl(var(--fg)); }
+	.kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 24px; animation: up .8s var(--ease) both; }
+	h1 { margin: 0; font-size: clamp(34px, 5.4vw, 76px); font-weight: 500; line-height: 1.12; letter-spacing: -0.05em; }
+	.lede { max-width: 40rem; margin: 28px 0 0; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.7; color: hsl(var(--fg) / .6); animation: up .9s var(--ease) both .3s; }
+	.meta { display: flex; align-items: center; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); animation: up .9s var(--ease) both .4s; }
+	.meta time { margin-left: auto; }
+	.avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: hsl(var(--fg) / .08); font-size: 14px; }
+	.who { font-size: 14px; font-weight: 500; }
+	.who small { display: block; font-size: 12px; font-weight: 400; color: hsl(var(--fg) / .45); }
+
+	.cover { margin: clamp(48px, 7vw, 88px) auto 0; }
+	.cover-frame { aspect-ratio: 21 / 9; border-radius: 24px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); animation: fade 1.2s ease both .5s; }
+	.cover-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+	.body { display: grid; grid-template-columns: 220px minmax(0, 680px); justify-content: center; gap: clamp(40px, 7vw, 120px); margin-top: clamp(64px, 8vw, 112px); }
+	.toc { position: sticky; top: 112px; align-self: start; }
+	.toc ol { list-style: none; margin: 20px 0 0; padding: 0; border-left: 1px solid var(--line); }
+	.toc a {
+		display: flex; gap: 12px; margin-left: -1px; padding: 9px 0 9px 16px;
+		border-left: 1px solid transparent;
+		font-size: 13.5px; line-height: 1.5; color: hsl(var(--fg) / .45);
+		transition: color .25s, border-color .25s;
+	}
+	.toc a span { font-family: var(--mono); font-size: 11px; padding-top: 2px; }
+	.toc a:hover { color: hsl(var(--fg) / .85); }
+	.toc a.active { color: hsl(var(--fg)); border-color: var(--accent); }
+
+	.more { margin-top: clamp(120px, 14vw, 180px); }
+	.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+	.more-card { display: flex; flex-direction: column; gap: 14px; }
+	.more-media { aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); }
+	.more-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
+	.more-card:hover .more-media img { transform: scale(1.05); }
+	.more-title { font-size: clamp(20px, 2vw, 26px); font-weight: 500; letter-spacing: -0.035em; line-height: 1.3; }
+
+	@media (max-width: 1023px) {
+		.body { grid-template-columns: minmax(0, 680px); }
+		.toc { display: none; }
+	}
+	@media (max-width: 640px) {
+		.cover-frame { aspect-ratio: 4 / 3; border-radius: 18px; }
+		.more-grid { grid-template-columns: 1fr; }
+		.meta time { display: none; }
+	}
+</style>

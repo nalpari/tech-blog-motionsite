@@ -40,7 +40,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: deploy/docker-compose.yml
+          source: deploy/docker-compose.yml,deploy/nginx-blog.devgrr.kr.conf
           target: tech-blog-motionsite # EC2 사용자 홈 기준
       - uses: appleboy/ssh-action@v1
         with:
@@ -53,3 +53,21 @@ jobs:
             docker compose pull web
             docker compose up -d --remove-orphans
             docker image prune -f
+
+            # 호스트 nginx 설정을 반영한다. 문법 검사에 실패하면 직전 설정으로 되돌리고 배포를 실패시킨다.
+            conf=/etc/nginx/sites-available/blog.devgrr.kr
+            link=/etc/nginx/sites-enabled/blog.devgrr.kr
+            had_prev=false
+            if [ -f "$conf" ]; then sudo cp -p "$conf" "$conf.prev"; had_prev=true; fi
+            sudo cp nginx-blog.devgrr.kr.conf "$conf"
+            sudo ln -sfn "$conf" "$link"
+            if ! sudo nginx -t; then
+              if $had_prev; then sudo cp -p "$conf.prev" "$conf"; else sudo rm -f "$conf" "$link"; fi
+              echo "nginx 설정 검사 실패. 직전 설정으로 되돌렸다." >&2
+              exit 1
+            fi
+            sudo systemctl reload nginx
+
+            # 같은 도메인을 잡은 다른 설정(neo 등)이 남아 있으면 그쪽이 응답할 수 있어 알린다.
+            dup=$(sudo grep -lE "server_name[^;]*blog\.devgrr\.kr" /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf 2>/dev/null | grep -vx "$link" || true)
+            if [ -n "$dup" ]; then echo "::warning::blog.devgrr.kr 를 잡은 다른 nginx 설정: $dup"; fi

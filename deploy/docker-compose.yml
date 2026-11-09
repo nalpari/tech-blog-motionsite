@@ -1,0 +1,8 @@
+# EC2 의 ~/tech-blog-motionsite/deploy 에서 실행한다.
+# DOCKERHUB_USERNAME 은 같은 폴더의 .env 에 둔다.
+services:
+  web:
+    image: ${DOCKERHUB_USERNAME}/tech-blog-motionsite:latest
+    restart: unless-stopped
+    # 호스트 nginx 만 붙도록 루프백에만 연다. neo 프론트(3000)와 겹치지 않게 3100 을 쓴다.
+    ports: ["127.0.0.1:3100:80"]

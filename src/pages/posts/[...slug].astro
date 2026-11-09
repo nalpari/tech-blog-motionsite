@@ -1,0 +1,211 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import Author from '../../components/Author.astro';
+import { formatDate, readingMinutes } from '../../site';
+
+export async function getStaticPaths() {
+	const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+	return posts.map((post, i) => ({
+		params: { slug: post.id },
+		props: { post, next: posts[(i + 1) % posts.length], prev: posts[(i - 1 + posts.length) % posts.length] },
+	}));
+}
+
+const { post, next, prev } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2);
+const d = post.data;
+---
+
+<Layout title={d.title} description={d.description} image={d.cover}>
+	<div class="progress" aria-hidden="true"></div>
+	<!-- 본문 제목이 위로 사라지면 nav 아래에 고정되는 축약 제목 -->
+	<div class="mini-title" data-mini aria-hidden="true">
+		<div class="wrap"><span class="mini-chip label"><span class="dot"></span>Reading</span><span class="mini-text">{d.title}</span></div>
+	</div>
+
+	<article>
+		<header class="wrap head">
+			<a class="back label" href="/#index">← Index</a>
+			<p class="label kicker"><span class="dot"></span> {d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
+			<h1 data-title>
+				<span class="line-mask"><span style="--d:.1s">{d.title}</span></span>
+			</h1>
+			<p class="lede">{d.description}</p>
+			<div class="meta">
+				<Author showName />
+				<time class="label" datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
+			</div>
+		</header>
+
+		<figure class="wrap cover">
+			<div class="cover-frame"><img src={d.cover} alt="" width="1200" height="904" /></div>
+		</figure>
+
+		<div class="wrap body">
+			{toc.length > 0 && (
+				<aside class="toc" aria-label="목차">
+					<p class="label">Contents</p>
+					<ol>
+						{toc.map((h, i) => (
+							<li><a href={`#${h.slug}`} data-toc={h.slug}><span>{String(i + 1).padStart(2, '0')}</span>{h.text}</a></li>
+						))}
+					</ol>
+				</aside>
+			)}
+			<div class="prose">
+				<Content />
+			</div>
+		</div>
+	</article>
+
+	<nav class="wrap more" aria-label="다른 글">
+		<p class="label">Keep reading</p>
+		<div class="more-grid">
+			{[prev, next].filter((p, i, a) => p.id !== post.id && a.findIndex((x) => x.id === p.id) === i).map((p) => (
+				<a class="more-card" href={`/posts/${p.id}/`}>
+					<div class="more-media"><img src={p.data.cover} alt="" loading="lazy" width="1200" height="904" /></div>
+					<span class="label">{p.data.tags[0]}</span>
+					<span class="more-title">{p.data.title}</span>
+				</a>
+			))}
+		</div>
+	</nav>
+</Layout>
+
+<script>
+	// highlight the TOC entry for the heading currently being read
+	const links = new Map(
+		[...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')].map((a) => [a.dataset.toc!, a]),
+	);
+	const io = new IntersectionObserver(
+		(entries) => {
+			for (const e of entries) {
+				if (!e.isIntersecting) continue;
+				links.forEach((a) => a.classList.remove('active'));
+				links.get(e.target.id)?.classList.add('active');
+			}
+		},
+		{ rootMargin: '-20% 0px -70% 0px' },
+	);
+	links.forEach((_, id) => {
+		const h = document.getElementById(id);
+		if (h) io.observe(h);
+	});
+
+	// 본문 제목이 nav 뒤로 넘어가면 축약 제목을 보인다
+	const title = document.querySelector('[data-title]');
+	const mini = document.querySelector('[data-mini]');
+	if (title && mini) {
+		new IntersectionObserver(([e]) => mini.classList.toggle('on', !e.isIntersecting && e.boundingClientRect.top < 0), {
+			rootMargin: '-84px 0px 0px 0px',
+		}).observe(title);
+	}
+
+	// 코드 블록 우측 상단 복사 버튼. pre 는 가로 스크롤되므로 버튼은 감싼 div 에 붙인다.
+	document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+		const wrap = document.createElement('div');
+		wrap.className = 'code-block';
+		pre.replaceWith(wrap);
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'copy-btn';
+		btn.textContent = 'Copy';
+		btn.setAttribute('aria-label', '코드 복사');
+		let timer = 0;
+		btn.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(pre.innerText.replace(/\n$/, ''));
+				btn.textContent = 'Copied';
+			} catch {
+				btn.textContent = 'Failed';
+			}
+			btn.classList.add('done');
+			clearTimeout(timer);
+			timer = window.setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+		});
+		wrap.append(pre, btn);
+	});
+</script>
+
+<style>
+	.progress {
+		position: fixed; top: 0; left: 0; right: 0; z-index: 40; height: 2px;
+		background: var(--accent); transform-origin: 0 50%; transform: scaleX(0);
+	}
+	@supports (animation-timeline: scroll()) {
+		.progress { animation: grow linear both; animation-timeline: scroll(root); }
+		@keyframes grow { to { transform: scaleX(1); } }
+	}
+
+	/* nav(16px + 52px + 16px = 84px) 바로 아래 */
+	.mini-title {
+		position: fixed; top: 84px; left: 0; right: 0; z-index: 19; pointer-events: none;
+		padding: 10px 0 16px;
+		background: #060607;
+		box-shadow: 0 1px 0 var(--line);
+		opacity: 0; translate: 0 -8px;
+		transition: opacity .3s var(--ease), translate .3s var(--ease);
+	}
+	.mini-title.on { opacity: 1; translate: 0 0; }
+	.mini-title .wrap { display: flex; align-items: center; gap: 16px; max-width: 1040px; }
+	.mini-chip {
+		flex: none; display: inline-flex; align-items: center; gap: 8px;
+		padding: 7px 12px; border-radius: 999px;
+		font-size: 10px; color: var(--accent);
+		box-shadow: inset 0 0 0 1px rgba(255, 91, 31, .4);
+		background: rgba(255, 91, 31, .08);
+	}
+	.mini-text {
+		min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+		font-size: clamp(17px, 1.6vw, 22px); font-weight: 600; line-height: 1.3; letter-spacing: -0.035em;
+	}
+	@media (max-width: 640px) {
+		.mini-chip { display: none; }
+	}
+
+	.head { padding-top: clamp(140px, 18vh, 200px); max-width: 1040px; }
+	.back { display: inline-block; margin-bottom: 48px; transition: color .2s; }
+	.back:hover { color: hsl(var(--fg)); }
+	.kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 24px; animation: up .8s var(--ease) both; }
+	h1 { margin: 0; font-size: clamp(34px, 5.4vw, 76px); font-weight: 500; line-height: 1.12; letter-spacing: -0.05em; }
+	.lede { max-width: 40rem; margin: 28px 0 0; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.7; color: hsl(var(--fg) / .6); animation: up .9s var(--ease) both .3s; }
+	.meta { display: flex; align-items: center; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); animation: up .9s var(--ease) both .4s; }
+	.meta time { margin-left: auto; }
+
+	.cover { margin: clamp(48px, 7vw, 88px) auto 0; }
+	.cover-frame { aspect-ratio: 21 / 9; border-radius: 24px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); animation: fade 1.2s ease both .5s; }
+	.cover-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+	.body { display: grid; grid-template-columns: 220px minmax(0, 680px); justify-content: center; gap: clamp(40px, 7vw, 120px); margin-top: clamp(64px, 8vw, 112px); }
+	.toc { position: sticky; top: 164px; align-self: start; }
+	.toc ol { list-style: none; margin: 20px 0 0; padding: 0; border-left: 1px solid var(--line); }
+	.toc a {
+		display: flex; gap: 12px; margin-left: -1px; padding: 9px 0 9px 16px;
+		border-left: 1px solid transparent;
+		font-size: 13.5px; line-height: 1.5; color: hsl(var(--fg) / .45);
+		transition: color .25s, border-color .25s;
+	}
+	.toc a span { font-family: var(--mono); font-size: 11px; padding-top: 2px; }
+	.toc a:hover { color: hsl(var(--fg) / .85); }
+	.toc a.active { color: hsl(var(--fg)); border-color: var(--accent); }
+
+	.more { margin-top: clamp(120px, 14vw, 180px); }
+	.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+	.more-card { display: flex; flex-direction: column; gap: 14px; }
+	.more-media { aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); }
+	.more-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
+	.more-card:hover .more-media img { transform: scale(1.05); }
+	.more-title { font-size: clamp(20px, 2vw, 26px); font-weight: 500; letter-spacing: -0.035em; line-height: 1.3; }
+
+	@media (max-width: 1023px) {
+		.body { grid-template-columns: minmax(0, 680px); }
+		.toc { display: none; }
+	}
+	@media (max-width: 640px) {
+		.cover-frame { aspect-ratio: 4 / 3; border-radius: 18px; }
+		.more-grid { grid-template-columns: 1fr; }
+		.meta time { display: none; }
+	}
+</style>

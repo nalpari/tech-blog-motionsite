@@ -1,11 +1,14 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import { CATEGORIES, SITE, formatDate, readingMinutes } from '../site';
+import Author from '../components/Author.astro';
+import { SITE, formatDate, readingMinutes } from '../site';
 
 const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const featured = posts.find((p) => p.data.featured) ?? posts[0];
-const counts = Object.fromEntries(Object.keys(CATEGORIES).map((c) => [c, posts.filter((p) => p.data.category === c).length]));
+const counts = new Map<string, number>();
+for (const p of posts) for (const t of p.data.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+const tags = [...counts].sort((a, b) => b[1] - a[1]);
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
 
@@ -33,7 +36,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 		<div class="wrap hero-strip label">
 			<span>{pad(posts.length)} Articles</span>
-			<span>{pad(Object.keys(CATEGORIES).length)} Teams</span>
+			<span>{pad(tags.length)} Topics</span>
 			<span>Updated {formatDate(posts[0].data.date)}</span>
 			<span class="scroll-cue">Scroll ↓</span>
 		</div>
@@ -41,48 +44,49 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 	<section class="wrap featured" id="featured">
 		<p class="label reveal">Featured — 이번 주의 글</p>
-		<a class="feat-card reveal" href={`/posts/${featured.id}/`} style="--d:.08s">
+		<div class="feat-card reveal" style="--d:.08s">
 			<div class="feat-media">
 				<img src={featured.data.cover} alt="" loading="lazy" width="1200" height="904" />
 			</div>
 			<div class="feat-body">
-				<span class="label">{CATEGORIES[featured.data.category]} · {readingMinutes(featured.body)} min read</span>
-				<h2>{featured.data.title}</h2>
+				<span class="label">{featured.data.tags[0]} · {readingMinutes(featured.body)} min read</span>
+				<h2><a class="stretch" href={`/posts/${featured.id}/`}>{featured.data.title}</a></h2>
 				<p>{featured.data.description}</p>
 				<div class="byline">
-					<span class="avatar" aria-hidden="true">{featured.data.author.slice(0, 1)}</span>
-					<span>{featured.data.author}<small>{featured.data.role}</small></span>
+					<Author showName />
 					<span class="go" aria-hidden="true">↗</span>
 				</div>
 			</div>
-		</a>
+		</div>
 	</section>
 
 	<section class="wrap index" id="index">
 		<div class="index-head reveal">
 			<h2>Index <em>of everything</em><sup>{pad(posts.length)}</sup></h2>
-			<div class="filters" role="group" aria-label="카테고리 필터">
+			<div class="filters" role="group" aria-label="태그 필터">
 				<button type="button" class="chip" aria-pressed="true" data-filter="all">All</button>
-				{Object.entries(CATEGORIES).map(([key, label]) => (
-					<button type="button" class="chip" aria-pressed="false" data-filter={key}>{label}<sup>{counts[key]}</sup></button>
+				{tags.map(([tag, n]) => (
+					<button type="button" class="chip" aria-pressed="false" data-filter={tag}>{tag}<sup>{n}</sup></button>
 				))}
 			</div>
 		</div>
 
 		<ol class="rows" data-rows>
 			{posts.map((post, i) => (
-				<li class="row reveal" data-cat={post.data.category} style={`--d:${i * 0.06}s`}>
-					<a href={`/posts/${post.id}/`} data-cover={post.data.cover}>
+				<li class="row reveal" data-tags={post.data.tags.join('|')} style={`--d:${Math.min(i, 8) * 0.06}s`}>
+					<div class="row-in" data-cover={post.data.cover}>
 						<span class="no">{pad(i + 1)}</span>
-						<span class="cat label">{CATEGORIES[post.data.category]}</span>
-						<span class="title">
-							{post.data.title}
-							<small>{post.data.description}</small>
-						</span>
-						<span class="who">{post.data.author}</span>
+						<span class="cat label">{post.data.tags[0]}</span>
+						<a class="stretch title-link" href={`/posts/${post.id}/`}>
+							<span class="title">
+								{post.data.title}
+								<small>{post.data.description}</small>
+							</span>
+						</a>
+						<span class="who"><Author size={32} /></span>
 						<time class="when label" datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
 						<img class="thumb" src={post.data.cover} alt="" loading="lazy" width="120" height="90" />
-					</a>
+					</div>
 				</li>
 			))}
 		</ol>
@@ -119,14 +123,14 @@ const pad = (n: number) => String(n).padStart(2, '0');
 		loop();
 	}
 
-	// category filter
+	// tag filter
 	const chips = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
 	const rows = document.querySelectorAll<HTMLElement>('[data-rows] .row');
 	chips.forEach((chip) =>
 		chip.addEventListener('click', () => {
-			const f = chip.dataset.filter;
+			const f = chip.dataset.filter!;
 			chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-			rows.forEach((r) => (r.hidden = f !== 'all' && r.dataset.cat !== f));
+			rows.forEach((r) => (r.hidden = f !== 'all' && !r.dataset.tags!.split('|').includes(f)));
 		}),
 	);
 
@@ -142,14 +146,18 @@ const pad = (n: number) => String(n).padStart(2, '0');
 			preview.style.transform = `translate3d(${x}px, ${y}px, 0)`;
 			raf = requestAnimationFrame(loop);
 		};
-		document.querySelectorAll<HTMLAnchorElement>('[data-cover]').forEach((a) => {
+		document.querySelectorAll<HTMLElement>('[data-cover]').forEach((a) => {
 			a.addEventListener('pointerenter', (e) => {
 				img.src = a.dataset.cover!;
 				if (!preview.classList.contains('on')) { x = tx = e.clientX; y = ty = e.clientY; }
 				preview.classList.add('on');
 				if (!raf) loop();
 			});
-			a.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; });
+			a.addEventListener('pointermove', (e) => {
+				tx = e.clientX; ty = e.clientY;
+				// 작성자 팝오버를 가리지 않게
+				preview.classList.toggle('on', !(e.target as Element).closest('.author'));
+			});
 			a.addEventListener('pointerleave', () => preview.classList.remove('on'));
 		});
 		document.querySelector('[data-rows]')?.addEventListener('pointerleave', () => { cancelAnimationFrame(raf); raf = 0; });
@@ -227,6 +235,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 	/* ---------- featured ---------- */
 	.featured { padding-top: clamp(96px, 12vw, 160px); }
 	.feat-card {
+		position: relative;
 		display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(24px, 4vw, 64px); align-items: center;
 		margin-top: 28px; padding: 14px; border-radius: 28px;
 		background: var(--raised); box-shadow: 0 0 0 1px var(--line);
@@ -240,8 +249,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
 	.feat-body h2 { margin: 20px 0 0; font-size: clamp(28px, 3.4vw, 48px); font-weight: 500; line-height: 1.15; letter-spacing: -0.045em; }
 	.feat-body p { margin: 20px 0 0; max-width: 32rem; color: hsl(var(--fg) / .6); line-height: 1.7; }
 	.byline { display: flex; align-items: center; gap: 12px; margin-top: 40px; font-size: 14px; font-weight: 500; }
-	.byline small { display: block; font-size: 12px; font-weight: 400; color: hsl(var(--fg) / .45); }
-	.avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: hsl(var(--fg) / .08); font-size: 14px; }
+	/* 카드 전체를 덮는 링크. 작성자 링크는 z-index 로 그 위에 있다 */
+	.stretch::after { content: ''; position: absolute; inset: 0; }
 	.go {
 		margin-left: auto; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
 		box-shadow: 0 0 0 1px hsl(var(--fg) / .2); font-size: 18px;
@@ -268,7 +277,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 	.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 	.row { border-bottom: 1px solid var(--line); }
-	.row a {
+	.row-in {
 		position: relative;
 		display: grid; grid-template-columns: 64px 120px 1fr 120px 110px; align-items: baseline; gap: 24px;
 		padding: 34px 8px;
@@ -286,9 +295,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 	.who { font-size: 14px; color: hsl(var(--fg) / .7); }
 	.when { text-align: right; font-variant-numeric: tabular-nums; }
 	.thumb { display: none; }
-	.row a:hover { background: hsl(var(--fg) / .025); }
-	.row a:hover .title { transform: translateX(14px); }
-	.row a:hover .no { color: var(--accent); }
+	.row-in:hover { background: hsl(var(--fg) / .025); }
+	.row-in:hover .title { transform: translateX(14px); }
+	.row-in:hover .no { color: var(--accent); }
 
 	.preview {
 		position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none;
@@ -303,15 +312,16 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 	/* ---------- responsive ---------- */
 	@media (max-width: 1023px) {
-		.row a { grid-template-columns: 44px 1fr 96px; grid-template-areas: 'no cat thumb' 'no title thumb' 'no meta thumb'; gap: 6px 16px; align-items: start; padding: 24px 0; }
+		.row-in { grid-template-columns: 44px 1fr 96px; grid-template-areas: 'no cat thumb' 'no title thumb' 'no meta thumb'; gap: 6px 16px; align-items: start; padding: 24px 0; }
 		.no { grid-area: no; font-size: 22px; }
 		.cat { grid-area: cat; }
-		.title { grid-area: title; font-size: 20px; }
+		.title-link { grid-area: title; }
+		.title { font-size: 20px; }
 		.title small { display: none; }
 		.who { grid-area: meta; font-size: 13px; }
 		.when { display: none; }
 		.thumb { grid-area: thumb; display: block; width: 96px; height: 72px; object-fit: cover; border-radius: 10px; }
-		.row a:hover .title { transform: none; }
+		.row-in:hover .title { transform: none; }
 		.feat-card { grid-template-columns: 1fr; }
 		.feat-body { padding: 8px 12px 16px; }
 	}

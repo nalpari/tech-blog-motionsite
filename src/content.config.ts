@@ -8,10 +8,8 @@ const posts = defineCollection({
 		title: z.string(),
 		description: z.string(),
 		date: z.coerce.date(),
-		category: z.enum(['infra', 'frontend', 'data', 'platform', 'security']),
-		author: z.string(),
-		role: z.string(),
-		cover: z.string(),
+		tags: z.array(z.string()).default([]),
+		cover: z.string().default('/media/hero-poster.jpg'),
 		featured: z.boolean().default(false),
 	}),
 });

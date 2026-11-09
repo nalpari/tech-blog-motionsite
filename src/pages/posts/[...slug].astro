@@ -1,7 +1,8 @@
 ---
 import { getCollection, render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
-import { CATEGORIES, formatDate, readingMinutes } from '../../site';
+import Author from '../../components/Author.astro';
+import { formatDate, readingMinutes } from '../../site';
 
 export async function getStaticPaths() {
 	const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -23,14 +24,13 @@ const d = post.data;
 	<article>
 		<header class="wrap head">
 			<a class="back label" href="/#index">← Index</a>
-			<p class="label kicker"><span class="dot"></span> {CATEGORIES[d.category]} · {readingMinutes(post.body)} min read</p>
+			<p class="label kicker"><span class="dot"></span> {d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
 			<h1>
 				<span class="line-mask"><span style="--d:.1s">{d.title}</span></span>
 			</h1>
 			<p class="lede">{d.description}</p>
 			<div class="meta">
-				<span class="avatar" aria-hidden="true">{d.author.slice(0, 1)}</span>
-				<span class="who">{d.author}<small>{d.role}</small></span>
+				<Author showName />
 				<time class="label" datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
 			</div>
 		</header>
@@ -62,7 +62,7 @@ const d = post.data;
 			{[prev, next].filter((p, i, a) => p.id !== post.id && a.findIndex((x) => x.id === p.id) === i).map((p) => (
 				<a class="more-card" href={`/posts/${p.id}/`}>
 					<div class="more-media"><img src={p.data.cover} alt="" loading="lazy" width="1200" height="904" /></div>
-					<span class="label">{CATEGORIES[p.data.category]}</span>
+					<span class="label">{p.data.tags[0]}</span>
 					<span class="more-title">{p.data.title}</span>
 				</a>
 			))}
@@ -109,9 +109,6 @@ const d = post.data;
 	.lede { max-width: 40rem; margin: 28px 0 0; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.7; color: hsl(var(--fg) / .6); animation: up .9s var(--ease) both .3s; }
 	.meta { display: flex; align-items: center; gap: 12px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); animation: up .9s var(--ease) both .4s; }
 	.meta time { margin-left: auto; }
-	.avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: hsl(var(--fg) / .08); font-size: 14px; }
-	.who { font-size: 14px; font-weight: 500; }
-	.who small { display: block; font-size: 12px; font-weight: 400; color: hsl(var(--fg) / .45); }
 
 	.cover { margin: clamp(48px, 7vw, 88px) auto 0; }
 	.cover-frame { aspect-ratio: 21 / 9; border-radius: 24px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); animation: fade 1.2s ease both .5s; }

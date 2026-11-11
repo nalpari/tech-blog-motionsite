@@ -60,6 +60,26 @@ const d = post.data;
 		</div>
 	</article>
 
+	<section class="wrap comments" aria-label="댓글">
+		<p class="label">Comments</p>
+		<!-- 사이트가 다크 전용이라 테마는 OS 설정을 따르지 않고 고정한다 -->
+		<script is:inline src="https://giscus.app/client.js"
+			data-repo="nalpari/tech-blog-motionsite"
+			data-repo-id="R_kgDOVnv_Ow"
+			data-category="Announcements"
+			data-category-id="DIC_kwDOVnv_O84DK3Xf"
+			data-mapping="pathname"
+			data-strict="0"
+			data-reactions-enabled="1"
+			data-emit-metadata="0"
+			data-input-position="bottom"
+			data-theme="transparent_dark"
+			data-lang="ko"
+			data-loading="lazy"
+			crossorigin="anonymous"
+			async></script>
+	</section>
+
 	<nav class="wrap more" aria-label="다른 글">
 		<p class="label">Keep reading</p>
 		<div class="more-grid">
@@ -190,6 +210,9 @@ const d = post.data;
 	.toc a span { font-family: var(--mono); font-size: 11px; padding-top: 2px; }
 	.toc a:hover { color: hsl(var(--fg) / .85); }
 	.toc a.active { color: hsl(var(--fg)); border-color: var(--accent); }
+
+	.comments { max-width: 1040px; margin-top: clamp(80px, 10vw, 120px); padding-top: 32px; border-top: 1px solid var(--line); }
+	.comments .label { margin: 0 0 24px; }
 
 	.more { margin-top: clamp(120px, 14vw, 180px); }
 	.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }

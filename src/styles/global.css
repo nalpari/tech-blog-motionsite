@@ -1,11 +1,36 @@
-html, body { background: #060607; color: #f2f1ee; }
+html, body { background: var(--bg); color: hsl(var(--fg)); }
 
-:root {
+/* 다크 토큰. .dark-scope 는 요소 자체에 다시 선언하므로 라이트 테마 안에서도 다크가 된다 (홈 히어로 등).
+   히어로가 있는 페이지에서 nav 가 히어로 위에 있는 동안(.past-hero 전)은 같이 다크로 둔다 */
+:root, .dark-scope, :root:has([data-hero]) .nav:not(.past-hero) {
 	--bg: #060607;
 	--fg: 40 12% 94%;          /* #f2f1ee */
 	--raised: #0e0e10;
 	--accent: #ff5b1f;          /* only: dots, active filter, progress bar */
 	--line: hsl(var(--fg) / .1);
+	--code-bg: #0b0b0c;
+	--glass-bg: rgba(14, 14, 16, .55);
+	--nav-bg: rgba(10, 10, 11, .78);
+	--nav-brightness: .7;
+	--shadow: rgba(0, 0, 0, .5);
+	--grain: .07;
+}
+/* 라이트 토큰: 따뜻한 오프화이트 바탕 + 근흑색 글자. 작은 텍스트 대비를 위해 주황을 조금 진하게 */
+:root[data-theme="light"] {
+	--bg: #f6f4ef;
+	--fg: 30 10% 9%;            /* #191715 */
+	--raised: #fcfbf8;
+	--accent: #e0480c;
+	--line: hsl(var(--fg) / .1);
+	--code-bg: #efece6;
+	--glass-bg: rgba(252, 251, 248, .6);
+	--nav-bg: rgba(246, 244, 239, .78);
+	--nav-brightness: 1.04;
+	--shadow: rgba(40, 30, 20, .14);
+	--grain: .035;
+}
+.dark-scope { color: hsl(var(--fg)); }
+:root {
 	--ease: cubic-bezier(.22, 1, .36, 1);
 	--sans: 'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
 	--serif: 'Instrument Serif', 'Times New Roman', serif;
@@ -26,7 +51,7 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 	word-break: keep-all;
 }
-::selection { background: rgba(255, 91, 31, .35); color: #fff; }
+::selection { background: rgba(255, 91, 31, .35); color: hsl(var(--fg)); }
 a { color: inherit; text-decoration: none; }
 img, video { display: block; max-width: 100%; }
 :focus-visible { outline: 1.5px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
@@ -45,7 +70,7 @@ img, video { display: block; max-width: 100%; }
 
 /* one material */
 .glass {
-	background: rgba(14, 14, 16, .55);
+	background: var(--glass-bg);
 	backdrop-filter: blur(16px) saturate(140%);
 	-webkit-backdrop-filter: blur(16px) saturate(140%);
 	box-shadow: inset 0 1px 0 hsl(var(--fg) / .08), 0 0 0 1px hsl(var(--fg) / .08);
@@ -53,7 +78,7 @@ img, video { display: block; max-width: 100%; }
 
 /* grain: unifies video + UI */
 .grain {
-	position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: .07;
+	position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: var(--grain);
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -116,7 +141,7 @@ img, video { display: block; max-width: 100%; }
 	margin: 2em 0;
 	padding: 24px 28px;
 	border-radius: 16px;
-	background: #0b0b0c !important;
+	background: var(--code-bg);
 	box-shadow: 0 0 0 1px var(--line);
 	font-family: var(--mono);
 	font-size: 13.5px;
@@ -124,6 +149,9 @@ img, video { display: block; max-width: 100%; }
 	overflow-x: auto;
 }
 .prose pre code { font-family: inherit; }
+/* shiki 이중 테마(defaultColor: false): 토큰마다 --shiki-light/--shiki-dark 가 붙으므로 테마에 맞는 쪽을 쓴다 */
+.prose pre, .prose pre span { color: var(--shiki-dark); font-style: var(--shiki-dark-font-style); }
+:root[data-theme="light"] .prose pre, :root[data-theme="light"] .prose pre span { color: var(--shiki-light); font-style: var(--shiki-light-font-style); }
 
 /* 코드 복사 버튼: 스크립트가 pre 를 .code-block 으로 감싸고 버튼을 붙인다 */
 .code-block { position: relative; }
@@ -132,7 +160,7 @@ img, video { display: block; max-width: 100%; }
 	font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
 	color: hsl(var(--fg) / .7); cursor: pointer;
 	padding: 8px 12px; border: 0; border-radius: 999px;
-	background: rgba(20, 20, 22, .85); box-shadow: inset 0 0 0 1px hsl(var(--fg) / .14);
+	background: color-mix(in srgb, var(--raised) 85%, transparent); box-shadow: inset 0 0 0 1px hsl(var(--fg) / .14);
 	opacity: 0; transition: opacity .2s, color .2s, box-shadow .2s;
 }
 .code-block:hover .copy-btn, .copy-btn:focus-visible, .copy-btn.done { opacity: 1; }

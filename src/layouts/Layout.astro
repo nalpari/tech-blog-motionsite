@@ -28,7 +28,30 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" />
-		<script is:inline>document.documentElement.classList.add('js');</script>
+		<script is:inline>
+			// CSS 페인트 전에 테마를 정한다(깜빡임 방지). 저장값 > OS 설정 순. 저장값이 없으면 OS 변경도 따라간다.
+			(() => {
+				const d = document.documentElement;
+				const mq = matchMedia('(prefers-color-scheme: light)');
+				const saved = () => { try { return localStorage.getItem('theme'); } catch { return null; } };
+				const apply = (t) => {
+					d.dataset.theme = t;
+					document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t === 'light' ? '#f6f4ef' : '#060607');
+					document.dispatchEvent(new CustomEvent('themechange', { detail: t }));
+				};
+				d.classList.add('js');
+				const s = saved();
+				apply(s === 'light' || s === 'dark' ? s : mq.matches ? 'light' : 'dark');
+				mq.addEventListener('change', (e) => { if (!saved()) apply(e.matches ? 'light' : 'dark'); });
+				// 토글 버튼은 아직 파싱 전이므로 위임으로 받는다
+				document.addEventListener('click', (e) => {
+					if (!e.target.closest?.('[data-theme-toggle]')) return;
+					const t = d.dataset.theme === 'light' ? 'dark' : 'light';
+					try { localStorage.setItem('theme', t); } catch {}
+					apply(t);
+				});
+			})();
+		</script>
 	</head>
 	<body>
 		<header class="nav" data-nav>
@@ -41,7 +64,13 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 					<a href="/#index">Articles</a>
 					<a href="/#featured">Featured</a>
 				</nav>
-				<span class="clock label" aria-label="서울 현재 시각"><span class="dot"></span> SEOUL <time data-clock>--:--</time></span>
+				<div class="tools">
+					<span class="clock label" aria-label="서울 현재 시각"><span class="dot"></span> SEOUL <time data-clock>--:--</time></span>
+					<button type="button" class="theme-toggle" data-theme-toggle aria-label="테마 전환">
+						<svg class="sun" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06"/></svg>
+						<svg class="moon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1Z"/></svg>
+					</button>
+				</div>
 			</div>
 		</header>
 
@@ -66,9 +95,20 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 		<script>
 			// nav glass after scroll
 			const nav = document.querySelector('[data-nav]');
-			const onScroll = () => nav?.classList.toggle('scrolled', scrollY > 40);
+			// 히어로가 nav(84px) 뒤로 다 지나가면 past-hero: 그 전까지 nav 는 다크 토큰을 쓴다
+			const hero = document.querySelector('[data-hero]');
+			const onScroll = () => {
+				nav?.classList.toggle('scrolled', scrollY > 40);
+				nav?.classList.toggle('past-hero', !!hero && hero.getBoundingClientRect().bottom <= 84);
+			};
 			addEventListener('scroll', onScroll, { passive: true });
 			onScroll();
+
+			// 테마 토글 라벨을 현재 상태에 맞춘다 (전환 자체는 head 인라인 스크립트가 처리)
+			const toggle = document.querySelector('[data-theme-toggle]');
+			const syncToggle = () => toggle?.setAttribute('aria-label', document.documentElement.dataset.theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환');
+			document.addEventListener('themechange', syncToggle);
+			syncToggle();
 
 			// live Seoul clock
 			const clock = document.querySelector('[data-clock]');
@@ -91,6 +131,7 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 	.nav {
 		position: fixed; top: 0; left: 0; right: 0; z-index: 20;
 		padding: 16px var(--gutter);
+		color: hsl(var(--fg));
 		animation: fade .8s var(--ease) both;
 	}
 	.nav-inner {
@@ -103,14 +144,14 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 	/* top scrim: content fades out before it reaches the nav */
 	.nav::before {
 		content: ''; position: absolute; inset: 0 0 -40px; z-index: -1; pointer-events: none;
-		background: linear-gradient(to bottom, #060607 0%, rgba(6, 6, 7, .85) 50%, transparent 100%);
+		background: linear-gradient(to bottom, var(--bg) 0%, color-mix(in srgb, var(--bg) 85%, transparent) 50%, transparent 100%);
 		opacity: 0; transition: opacity .35s var(--ease);
 	}
 	.nav.scrolled::before { opacity: 1; }
 	.nav.scrolled .nav-inner {
-		background: rgba(10, 10, 11, .78);
-		backdrop-filter: blur(28px) saturate(160%) brightness(.7);
-		-webkit-backdrop-filter: blur(28px) saturate(160%) brightness(.7);
+		background: var(--nav-bg);
+		backdrop-filter: blur(28px) saturate(160%) brightness(var(--nav-brightness));
+		-webkit-backdrop-filter: blur(28px) saturate(160%) brightness(var(--nav-brightness));
 		box-shadow: inset 0 1px 0 hsl(var(--fg) / .08), 0 0 0 1px hsl(var(--fg) / .08);
 	}
 	.mark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; letter-spacing: .14em; }
@@ -121,7 +162,17 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 		transition: color .2s, background .2s;
 	}
 	.links a:hover { color: hsl(var(--fg)); background: hsl(var(--fg) / .07); }
+	.tools { display: flex; align-items: center; gap: 4px; }
 	.clock { display: inline-flex; align-items: center; gap: 8px; padding-right: 10px; font-variant-numeric: tabular-nums; }
+	.theme-toggle {
+		display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+		background: transparent; color: hsl(var(--fg) / .7);
+		transition: color .2s, background .2s;
+	}
+	.theme-toggle:hover { color: hsl(var(--fg)); background: hsl(var(--fg) / .07); }
+	/* 지금 테마의 반대(전환될 테마) 아이콘을 보인다 */
+	.theme-toggle .moon, :global(:root[data-theme='light']) .theme-toggle .sun { display: none; }
+	:global(:root[data-theme='light']) .theme-toggle .moon { display: block; }
 	@media (max-width: 640px) {
 		.clock { display: none; }
 		.links a { padding: 8px 12px; }

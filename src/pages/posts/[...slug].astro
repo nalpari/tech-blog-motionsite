@@ -62,22 +62,31 @@ const d = post.data;
 
 	<section class="wrap comments" aria-label="댓글">
 		<p class="label">Comments</p>
-		<!-- 사이트가 다크 전용이라 테마는 OS 설정을 따르지 않고 고정한다 -->
-		<script is:inline src="https://giscus.app/client.js"
-			data-repo="nalpari/tech-blog-motionsite"
-			data-repo-id="R_kgDOVnv_Ow"
-			data-category="Announcements"
-			data-category-id="DIC_kwDOVnv_O84DK3Xf"
-			data-mapping="pathname"
-			data-strict="0"
-			data-reactions-enabled="1"
-			data-emit-metadata="0"
-			data-input-position="bottom"
-			data-theme="transparent_dark"
-			data-lang="ko"
-			data-loading="lazy"
-			crossorigin="anonymous"
-			async></script>
+		<!-- giscus 테마는 사이트 테마를 따른다. client.js 는 자기 script 태그의 data-theme 을 읽으므로
+		     실행 전에 값을 넣으려고 태그를 직접 만든다. 이후 전환은 아래 themechange 리스너가 postMessage 로 맞춘다 -->
+		<script is:inline>
+			(() => {
+				const s = document.createElement('script');
+				Object.entries({
+					src: 'https://giscus.app/client.js',
+					'data-repo': 'nalpari/tech-blog-motionsite',
+					'data-repo-id': 'R_kgDOVnv_Ow',
+					'data-category': 'Announcements',
+					'data-category-id': 'DIC_kwDOVnv_O84DK3Xf',
+					'data-mapping': 'pathname',
+					'data-strict': '0',
+					'data-reactions-enabled': '1',
+					'data-emit-metadata': '0',
+					'data-input-position': 'bottom',
+					'data-theme': document.documentElement.dataset.theme === 'light' ? 'light' : 'transparent_dark',
+					'data-lang': 'ko',
+					'data-loading': 'lazy',
+					crossorigin: 'anonymous',
+				}).forEach(([k, v]) => s.setAttribute(k, v));
+				s.async = true;
+				document.currentScript.after(s);
+			})();
+		</script>
 	</section>
 
 	<nav class="wrap more" aria-label="다른 글">
@@ -95,6 +104,12 @@ const d = post.data;
 </Layout>
 
 <script>
+	// 사이트 테마가 바뀌면 giscus iframe 에도 알린다
+	document.addEventListener('themechange', (e) => {
+		const theme = (e as CustomEvent<string>).detail === 'light' ? 'light' : 'transparent_dark';
+		document.querySelector<HTMLIFrameElement>('iframe.giscus-frame')?.contentWindow?.postMessage({ giscus: { setConfig: { theme } } }, 'https://giscus.app');
+	});
+
 	// highlight the TOC entry for the heading currently being read
 	const links = new Map(
 		[...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')].map((a) => [a.dataset.toc!, a]),
@@ -163,7 +178,7 @@ const d = post.data;
 	.mini-title {
 		position: fixed; top: 84px; left: 0; right: 0; z-index: 19; pointer-events: none;
 		padding: 10px 0 16px;
-		background: #060607;
+		background: var(--bg);
 		box-shadow: 0 1px 0 var(--line);
 		opacity: 0; translate: 0 -8px;
 		transition: opacity .3s var(--ease), translate .3s var(--ease);
@@ -195,7 +210,7 @@ const d = post.data;
 	.meta time { margin-left: auto; }
 
 	.cover { margin: clamp(48px, 7vw, 88px) auto 0; }
-	.cover-frame { aspect-ratio: 21 / 9; border-radius: 24px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); animation: fade 1.2s ease both .5s; }
+	.cover-frame { aspect-ratio: 21 / 9; border-radius: 24px; overflow: hidden; background: var(--raised); box-shadow: 0 0 0 1px var(--line); animation: fade 1.2s ease both .5s; }
 	.cover-frame img { width: 100%; height: 100%; object-fit: cover; }
 
 	.body { display: grid; grid-template-columns: 220px minmax(0, 680px); justify-content: center; gap: clamp(40px, 7vw, 120px); margin-top: clamp(64px, 8vw, 112px); }
@@ -217,7 +232,7 @@ const d = post.data;
 	.more { margin-top: clamp(120px, 14vw, 180px); }
 	.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
 	.more-card { display: flex; flex-direction: column; gap: 14px; }
-	.more-media { aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; box-shadow: 0 0 0 1px var(--line); }
+	.more-media { aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: var(--raised); box-shadow: 0 0 0 1px var(--line); }
 	.more-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
 	.more-card:hover .more-media img { transform: scale(1.05); }
 	.more-title { font-size: clamp(20px, 2vw, 26px); font-weight: 500; letter-spacing: -0.035em; line-height: 1.3; }

@@ -4,6 +4,7 @@ description: "코끼리(맥락을 아는 작성자)와 금붕어(맥락이 없�
 date: 2026-11-14T00:00:00.000Z
 tags: ["AI", "claude", "plugin"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/egm-cover.png"
+featured: true
 ---
 
 ## 들어가며

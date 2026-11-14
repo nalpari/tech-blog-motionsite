@@ -3,7 +3,6 @@ title: "GEO 완전 가이드"
 description: "생성형 엔진 최적화"
 date: 2026-10-16T07:14:43.819Z
 tags: ["AI & ML"]
-featured: true
 ---
 
 GEO를 한 문장으로 정의하면, **ChatGPT·Google AI Overviews/AI Mode·Perplexity·Copilot·Claude 같은 생성형 엔진이 답변을 만들 때 내 콘텐츠가 검색되고, 인용되고, 정확하게 요약되도록 만드는 작업**입니다. 2026년 시점의 결론은 이렇습니다. 실제로 효과를 내는 것의 80%는 "좋은 SEO + 크롤링 가능한 서버 렌더링 HTML + 근거(통계·출처·인용)가 풍부한 독창적 콘텐츠 + 제3자 평판(earned media)"입니다. llms.txt, 콘텐츠 "청킹", AI 전용 스키마 같은 'GEO 해킹'은 근거가 약하거나 Google이 공식적으로 불필요하다고 밝혔습니다.

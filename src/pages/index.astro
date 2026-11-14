@@ -43,7 +43,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 	</section>
 
 	<section class="wrap featured" id="featured">
-		<p class="label reveal">Featured — 이번 주의 글</p>
+		<p class="label reveal">Featured — <span class="ko">이번 주의 글</span></p>
 		<div class="feat-card reveal" style="--d:.08s">
 			<div class="feat-media">
 				<img src={featured.data.cover} alt="" loading="lazy" width="1200" height="904" />
@@ -235,6 +235,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 	/* ---------- featured ---------- */
 	.featured { padding-top: clamp(96px, 12vw, 160px); }
+	.featured .label .ko { font-family: var(--sans); }
 	.feat-card {
 		position: relative;
 		display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(24px, 4vw, 64px); align-items: center;

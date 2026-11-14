@@ -153,6 +153,19 @@ img, video { display: block; max-width: 100%; }
 .prose pre, .prose pre span { color: var(--shiki-dark); font-style: var(--shiki-dark-font-style); }
 :root[data-theme="light"] .prose pre, :root[data-theme="light"] .prose pre span { color: var(--shiki-light); font-style: var(--shiki-light-font-style); }
 
+/* 표: 가로가 넘치면 표 자체가 스크롤된다 */
+.prose table {
+	display: block; width: 100%; overflow-x: auto;
+	border-collapse: collapse;
+	font-size: .88em; line-height: 1.6;
+}
+.prose th, .prose td {
+	padding: 10px 16px; text-align: left; vertical-align: top;
+	border: 1px solid var(--line);
+}
+.prose table + p { margin-top: 1.4em; }
+.prose th { color: hsl(var(--fg)); font-weight: 600; background: hsl(var(--fg) / .05); white-space: nowrap; }
+
 /* 코드 복사 버튼: 스크립트가 pre 를 .code-block 으로 감싸고 버튼을 붙인다 */
 .code-block { position: relative; }
 .copy-btn {

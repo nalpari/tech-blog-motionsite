@@ -1,0 +1,96 @@
+---
+// Scramble Text (designbookmark.com/motion#db-scramble-text 이식).
+// 글자마다 랜덤 글리프로 깜빡이다 왼쪽부터 자리를 잡고, 잠시 뒤 다음 문구가 그 위로 해독된다.
+// 마우스를 올리면 다시 해독. 이 컴포넌트는 스프링 없이 아래 시간값으로만 움직인다(원본과 동일).
+interface Props { phrases: string[] }
+const { phrases } = Astro.props;
+---
+
+<span class="scramble" data-scramble={JSON.stringify(phrases)}>
+	<span class="sr">{phrases[0]}</span>
+	<span class="caret" aria-hidden="true"></span>
+</span>
+
+<script>
+	const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#%&*+=/<>';
+	const glyph = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
+	const HOLD = 2.6, FLICKER = 0.055;
+	const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	document.querySelectorAll<HTMLElement>('[data-scramble]').forEach((line) => {
+		const PHRASES: string[] = JSON.parse(line.dataset.scramble!);
+		const caret = line.querySelector<HTMLElement>('.caret')!;
+		type Cell = { el: HTMLElement; to: string; at: number; tick: number; done: boolean };
+		let cells: Cell[] = [], clock = 0, idx = 0, running = false, hold = HOLD;
+
+		function decode(text: string) {
+			while (cells.length < text.length) {
+				const el = document.createElement('span');
+				el.className = 'c';
+				el.setAttribute('aria-hidden', 'true');
+				line.insertBefore(el, caret);
+				cells.push({ el } as Cell);
+			}
+			cells.forEach((c, i) => {
+				c.to = text[i] ?? '';
+				c.at = clock + 0.18 + i * 0.035 + Math.random() * 0.28; // 자리 잡는 시각
+				c.tick = 0;
+				c.done = false;
+				c.el.classList.remove('ok');
+			});
+			running = true;
+		}
+
+		// 모션 줄이기: 첫 문구를 바로 보여 주고 순환하지 않는다
+		if (reduce) {
+			for (const ch of PHRASES[0]) {
+				const el = document.createElement('span');
+				el.className = 'c ok';
+				el.setAttribute('aria-hidden', 'true');
+				el.textContent = ch;
+				line.insertBefore(el, caret);
+			}
+			return;
+		}
+
+		line.addEventListener('pointerenter', () => { if (!running) decode(PHRASES[idx]); });
+		decode(PHRASES[0]);
+
+		let last = performance.now();
+		const loop = (now: number) => {
+			const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+			clock += dt;
+			if (!running && (hold -= dt) <= 0) { idx = (idx + 1) % PHRASES.length; decode(PHRASES[idx]); }
+			if (running) {
+				let left = 0;
+				cells.forEach((c) => {
+					if (c.done) return;
+					if (clock >= c.at) {
+						c.done = true;
+						if (c.to === '') c.el.remove();
+						else { c.el.textContent = c.to; c.el.classList.add('ok'); }
+					} else {
+						left++;
+						if (c.to === ' ') { c.el.textContent = ' '; c.el.classList.add('ok'); }
+						else if (clock >= c.tick) { c.el.textContent = glyph(); c.tick = clock + FLICKER; }
+					}
+				});
+				if (!left) { cells = cells.filter((c) => c.to !== ''); running = false; hold = HOLD; }
+			}
+			caret.style.opacity = running || (clock * 1.8) % 2 < 1 ? '1' : '0';
+			requestAnimationFrame(loop);
+		};
+		requestAnimationFrame(loop);
+	});
+</script>
+
+<style>
+	.scramble { white-space: pre; cursor: default; }
+	.scramble :global(.c) { color: hsl(var(--fg) / .3); }
+	.scramble :global(.c.ok) { color: inherit; }
+	.caret {
+		display: inline-block; width: .56em; height: 1.08em; margin-left: .1em; vertical-align: -.18em;
+		background: hsl(var(--fg)); border-radius: 2px;
+	}
+	.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>

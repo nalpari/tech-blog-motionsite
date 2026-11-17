@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import Author from '../components/Author.astro';
+import ScrambleText from '../components/ScrambleText.astro';
 import { SITE, formatDate, readingMinutes } from '../site';
 
 const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -22,7 +23,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
 		<div class="hero-fade" aria-hidden="true"></div>
 
 		<div class="wrap hero-content">
-			<p class="label hero-eyebrow"><span class="dot"></span> {SITE.org} Journal · Vol. {new Date().getFullYear()}</p>
+			<p class="label hero-eyebrow"><span class="dot"></span> <ScrambleText phrases={[
+				`${SITE.org} Journal · Vol. ${new Date().getFullYear()}`,
+				'Postmortems, unedited',
+				'Design decisions & why',
+				'The trade-offs in between',
+			]} /></p>
 			<h1>
 				<span class="line-mask"><span style="--d:.15s">운영하며 배운 것을</span></span>
 				<span class="line-mask"><span style="--d:.27s">숨기지 않고 <em>씁니다.</em></span></span>

@@ -11,6 +11,7 @@ const posts = defineCollection({
 		tags: z.array(z.string()).default([]),
 		cover: z.string().default('/media/hero-poster.jpg'),
 		featured: z.boolean().default(false),
+		draft: z.boolean().default(false),
 	}),
 });
 

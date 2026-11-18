@@ -1,11 +1,11 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import Author from '../components/Author.astro';
 import ScrambleText from '../components/ScrambleText.astro';
 import { SITE, formatDate, readingMinutes } from '../site';
+import { getPosts } from '../posts';
 
-const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const posts = await getPosts();
 const featured = posts.find((p) => p.data.featured) ?? posts[0];
 const counts = new Map<string, number>();
 for (const p of posts) for (const t of p.data.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -82,7 +82,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 				<li class="row reveal" data-tags={post.data.tags.join('|')} style={`--d:${Math.min(i, 8) * 0.06}s`}>
 					<div class="row-in" data-cover={post.data.cover}>
 						<span class="no">{pad(i + 1)}</span>
-						<span class="cat label">{post.data.tags[0]}</span>
+						<span class="cat label">{post.data.draft && <span class="draft">Draft · </span>}{post.data.tags[0]}</span>
 						<a class="stretch title-link" href={`/posts/${post.id}/`}>
 							<span class="title">
 								{post.data.title}
@@ -285,6 +285,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 	.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
 	.row { border-bottom: 1px solid var(--line); }
+	.cat .draft { color: var(--accent); }
 	.row-in {
 		position: relative;
 		display: grid; grid-template-columns: 64px 120px 1fr 120px 110px; align-items: baseline; gap: 24px;

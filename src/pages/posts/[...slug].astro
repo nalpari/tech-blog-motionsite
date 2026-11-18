@@ -1,11 +1,12 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Author from '../../components/Author.astro';
 import { formatDate, readingMinutes } from '../../site';
+import { getPosts } from '../../posts';
 
 export async function getStaticPaths() {
-	const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+	const posts = await getPosts();
 	return posts.map((post, i) => ({
 		params: { slug: post.id },
 		props: { post, next: posts[(i + 1) % posts.length], prev: posts[(i - 1 + posts.length) % posts.length] },
@@ -28,7 +29,7 @@ const d = post.data;
 	<article>
 		<header class="wrap head">
 			<a class="back label" href="/#index">← Index</a>
-			<p class="label kicker"><span class="dot"></span> {d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
+			<p class="label kicker"><span class="dot"></span> {d.draft && 'Draft · '}{d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
 			<h1 data-title>
 				<span class="line-mask"><span style="--d:.1s">{d.title}</span></span>
 			</h1>

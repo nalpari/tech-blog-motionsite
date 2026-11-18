@@ -32,6 +32,7 @@ date: 2026-11-15
 tags: ["Java", "Performance"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/example.png"
 featured: false
+draft: false
 ---
 ```
 
@@ -43,6 +44,9 @@ featured: false
 | `tags` | 아니오 | 홈 필터 칩. 첫 태그가 카드 라벨 |
 | `cover` | 아니오 | 커버 이미지 URL. 없으면 `/media/hero-poster.jpg` |
 | `featured` | 아니오 | `true`인 글이 홈 Featured. 없으면 최신 글 |
+| `draft` | 아니오 | `true`인 글은 `pnpm build`에서 빠지고 `pnpm dev`에서는 `Draft` 라벨과 함께 보임. 기본값 `false` |
+
+초안도 스키마 검증은 받습니다. 필수 필드(`title`, `description`, `date`)가 빠진 초안이 하나라도 있으면 `pnpm build` 전체가 실패합니다.
 
 본문 `##` 제목은 글 페이지 목차로 모입니다. 읽기 시간은 공백을 뺀 글자 수 기준, 분당 약 500자입니다.
 

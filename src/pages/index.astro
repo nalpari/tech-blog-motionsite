@@ -1,11 +1,11 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import Author from '../components/Author.astro';
 import ScrambleText from '../components/ScrambleText.astro';
 import { SITE, formatDate, readingMinutes } from '../site';
+import { getPosts } from '../posts';
 
-const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const posts = await getPosts();
 const featured = posts.find((p) => p.data.featured) ?? posts[0];
 const counts = new Map<string, number>();
 for (const p of posts) for (const t of p.data.tags) counts.set(t, (counts.get(t) ?? 0) + 1);

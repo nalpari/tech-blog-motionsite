@@ -1,11 +1,12 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Author from '../../components/Author.astro';
 import { formatDate, readingMinutes } from '../../site';
+import { getPosts } from '../../posts';
 
 export async function getStaticPaths() {
-	const posts = (await getCollection('posts')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+	const posts = await getPosts();
 	return posts.map((post, i) => ({
 		params: { slug: post.id },
 		props: { post, next: posts[(i + 1) % posts.length], prev: posts[(i - 1 + posts.length) % posts.length] },

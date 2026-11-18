@@ -29,7 +29,7 @@ const d = post.data;
 	<article>
 		<header class="wrap head">
 			<a class="back label" href="/#index">← Index</a>
-			<p class="label kicker"><span class="dot"></span> {d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
+			<p class="label kicker"><span class="dot"></span> {d.draft && 'Draft · '}{d.tags.join(' · ')} · {readingMinutes(post.body)} min read</p>
 			<h1 data-title>
 				<span class="line-mask"><span style="--d:.1s">{d.title}</span></span>
 			</h1>

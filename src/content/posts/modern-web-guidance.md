@@ -5,6 +5,7 @@ date: 2026-11-24T16:01:36+09:00
 tags: ["Dev tools", "AI"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/modern-web-guidance.png"
 featured: false
+repository: "GoogleChrome/modern-web-guidance-src"
 ---
 
 코딩 에이전트에게 모달, 툴팁, 이미지 최적화 같은 웹 UI 작업을 시키면, 이미 브라우저가 기본으로 제공하는 API가 있는데도 오래된 패턴의 무거운 JavaScript를 짜는 일이 잦습니다. 학습 데이터에 레거시 코드가 워낙 많아서, 모델이 API 이름 정도는 알아도 실제 프로덕션에 쓸 만한 최신 구현 패턴은 밀도가 부족한 경우가 많습니다.

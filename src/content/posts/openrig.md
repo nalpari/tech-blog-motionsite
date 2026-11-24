@@ -4,6 +4,7 @@ description: "AI 코딩 에이전트를 rig(팀)와 seat(자리)로 조직하는
 date: 2026-11-14T12:00:00.000Z
 tags: ["AI", "claude", "agent", "tmux"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/openrig-cover.png"
+repository: "mvschwarz/openrig"
 ---
 
 ## 들어가며

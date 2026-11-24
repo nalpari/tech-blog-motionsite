@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/star-history?collect=1", "schedule": "0 0 * * *" }
+  ]
+}

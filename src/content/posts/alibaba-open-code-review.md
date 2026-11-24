@@ -5,6 +5,7 @@ date: 2026-11-18T16:43:28+09:00
 tags: ["AI", "Dev tools"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/alibaba-open-code-review.png"
 featured: false
+repository: "alibaba/open-code-review"
 ---
 
 범용 코딩 에이전트에게 "이 PR을 리뷰해 줘"라고 맡기면, 큰 변경에서 파일을 건너뛰거나, 지적한 위치가 실제 코드와 어긋나거나, 같은 프롬프트인데도 품질이 흔들리는 일이 자주 있습니다. [Alibaba Open Code Review](https://github.com/alibaba/open-code-review)는 이 지점을 정면으로 겨냥한 AI 코드 리뷰 CLI입니다. 알리바바 그룹 내부의 공식 AI 코드 리뷰 어시스턴트였던 도구를, 대규모 사용으로 검증한 뒤 커뮤니티에 오픈소스로 공개한 프로젝트입니다.

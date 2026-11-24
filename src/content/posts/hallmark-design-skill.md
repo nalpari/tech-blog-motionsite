@@ -4,6 +4,7 @@ description: "nutlope/hallmark 스킬의 게이트 3단계, 테마 50종, slopli
 date: 2026-11-10T00:00:00.000Z
 tags: ["AI", "claude", "skill"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/Minimal-3D-illustration-for-a-tech-blog.jpeg"
+repository: "nutlope/hallmark"
 ---
 
 ## 들어가며

@@ -12,6 +12,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@vercel/blob": "^2.9.0",
     "astro": "^7.4.12"
   }
 }

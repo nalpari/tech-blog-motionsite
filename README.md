@@ -44,6 +44,7 @@ draft: false
 | `tags` | 아니오 | 홈 필터 칩. 첫 태그가 카드 라벨 |
 | `cover` | 아니오 | 커버 이미지 URL. 없으면 `/media/hero-poster.jpg` |
 | `featured` | 아니오 | `true`인 글이 홈 Featured. 없으면 최신 글 |
+| `repository` | 아니오 | 대표 공개 GitHub 저장소의 `owner/repo`. 글 상세에 스타 수와 7일 변화 표시 |
 | `draft` | 아니오 | `true`인 글은 `pnpm build`에서 빠지고 `pnpm dev`에서는 `Draft` 라벨과 함께 보임. 기본값 `false` |
 
 초안도 스키마 검증은 받습니다. 필수 필드(`title`, `description`, `date`)가 빠진 초안이 하나라도 있으면 `pnpm build` 전체가 실패합니다.
@@ -90,6 +91,12 @@ S3_COVER_PREFIX=
 코드 하이라이트는 Shiki 이중 테마(`github-light` / `vesper`)이고, 색은 `data-theme`에 따라 `global.css`가 고릅니다.
 
 ## 배포
+
+### GitHub 스타 이력
+
+현재 스타 수는 브라우저에서 공개 GitHub API로 조회합니다. 7일 순변화는 매일 오전 9시(한국 시간)부터 Vercel Cron이 기록한 스타 수를 비교합니다. Vercel 프로덕션 프로젝트에 비공개 Blob 스토어를 연결해 `BLOB_READ_WRITE_TOKEN`을 설정하고 `CRON_SECRET`을 추가합니다. 첫 기록부터 7일이 지나야 그래프가 표시됩니다.
+
+### EC2 배포
 
 `main`에 푸시하면 GitHub Actions가 이미지를 만들어 Docker Hub에 올리고, EC2에서 `docker compose pull` 후 컨테이너를 교체합니다. 호스트 nginx 설정(`deploy/nginx-blog.devgrr.kr.conf`)도 같이 반영하고, `nginx -t`에 실패하면 직전 설정으로 되돌립니다.
 

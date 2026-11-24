@@ -4,6 +4,7 @@ description: "코드베이스를 인터랙티브 지식 그래프로"
 date: 2026-05-16T11:38:50.343Z
 tags: ["AI & ML"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/covers/1778931506565-sp886m.png"
+repository: "Lum1104/Understand-Anything"
 ---
 
 > "Graphs that teach > graphs that impress."

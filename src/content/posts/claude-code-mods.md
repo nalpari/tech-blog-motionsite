@@ -4,6 +4,7 @@ description: "nateherkai/claude-code-mods 의 mod 4종 설명과 사용법"
 date: 2026-11-10T00:00:00.000Z
 tags: ["claude", "mods"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/claude-code-mods-cover.jpg"
+repository: "nateherkai/claude-code-mods"
 ---
 
 ## 들어가며

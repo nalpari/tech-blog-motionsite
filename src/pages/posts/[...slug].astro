@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Author from '../../components/Author.astro';
+import RepositoryStars from '../../components/RepositoryStars.astro';
 import { formatDate, readingMinutes } from '../../site';
 import { getPosts } from '../../posts';
 
@@ -38,6 +39,7 @@ const d = post.data;
 				<Author showName />
 				<time class="label" datetime={d.date.toISOString()}>{formatDate(d.date)}</time>
 			</div>
+			{d.repository && <RepositoryStars repository={d.repository} />}
 		</header>
 
 		<figure class="wrap cover">

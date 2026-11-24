@@ -1,0 +1,154 @@
+---
+interface Props {
+	repository: string;
+}
+
+const { repository } = Astro.props;
+---
+
+<repository-stars class="repository" data-repository={repository}>
+	<div class="repository-row">
+		<a href={`https://github.com/${repository}`} target="_blank" rel="noopener noreferrer">{repository} ↗</a>
+		<button type="button" aria-expanded="false" aria-controls="repository-star-history" hidden>
+			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m8 1.5 2 4.1 4.5.65-3.25 3.17.77 4.48L8 11.78l-4.02 2.12.77-4.48L1.5 6.25 6 5.6Z" stroke-linejoin="round"/></svg>
+			<span data-count>스타</span>
+			<svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" aria-hidden="true"><path d="m2.5 4.5 3.5 3 3.5-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+		</button>
+	</div>
+	<div class="history" id="repository-star-history" hidden>
+		<p class="status" role="status"></p>
+		<div data-chart hidden>
+			<div class="chart-row">
+				<span class="label">최근 7일</span>
+				<strong data-change></strong>
+			</div>
+			<svg class="sparkline" viewBox="0 0 320 48" preserveAspectRatio="none" role="img" aria-label="일별 GitHub 스타 수">
+				<path d="M0 47H320" class="baseline" vector-effect="non-scaling-stroke"/>
+				<path data-line fill="none" vector-effect="non-scaling-stroke"/>
+			</svg>
+			<div class="chart-row dates"><span data-first></span><span data-last></span></div>
+		</div>
+	</div>
+</repository-stars>
+
+<script>
+	const number = new Intl.NumberFormat('ko-KR');
+	const signed = new Intl.NumberFormat('ko-KR', { signDisplay: 'exceptZero' });
+
+	customElements.define('repository-stars', class extends HTMLElement {
+		connectedCallback() {
+			const repository = this.dataset.repository!;
+			const button = this.querySelector('button')!;
+			const count = this.querySelector('[data-count]')!;
+			const panel = this.querySelector<HTMLElement>('.history')!;
+			const status = this.querySelector<HTMLElement>('.status')!;
+			const chart = this.querySelector<HTMLElement>('[data-chart]')!;
+			let loading = false;
+			let loaded = false;
+
+			button.hidden = false;
+			button.setAttribute('aria-label', 'GitHub 스타 수, 최근 7일 변화');
+			fetch(`https://api.github.com/repos/${repository}/stargazers/count`, {
+				headers: { 'X-GitHub-Api-Version': '2026-03-10' },
+				signal: AbortSignal.timeout(8_000),
+			}).then(async (response) => {
+				if (!response.ok) throw new Error();
+				const data = await response.json();
+				if (!Number.isSafeInteger(data.count) || data.count < 0) throw new Error();
+				count.textContent = number.format(data.count);
+				button.setAttribute('aria-label', `GitHub 스타 ${count.textContent}개, 최근 7일 변화`);
+			}).catch(() => {
+				count.textContent = '스타 이력';
+			});
+
+			button.addEventListener('click', async () => {
+				panel.hidden = !panel.hidden;
+				button.setAttribute('aria-expanded', String(!panel.hidden));
+				if (panel.hidden || loading || loaded) return;
+				loading = true;
+				status.textContent = '스타 이력을 불러오는 중…';
+
+				try {
+					const response = await fetch('/api/star-history', { signal: AbortSignal.timeout(8_000) });
+					if (!response.ok) throw new Error();
+					const snapshots: { date: string; counts: Record<string, number> }[] = await response.json();
+					const points = snapshots.map(({ date, counts }) => ({ date, count: counts[repository] }));
+					// 오늘 수집 전에는 어제 기록을 끝점으로 사용한다.
+					if (points.at(-1)?.count === undefined) points.pop();
+					const week = points.slice(-8);
+					const first = week[0];
+					const last = week.at(-1);
+					if (week.length < 8 || first?.count === undefined || last?.count === undefined) {
+						status.textContent = '7일치 스타 기록을 수집 중입니다.';
+						loaded = true;
+						return;
+					}
+
+					const counts = week.flatMap(({ count }) => count === undefined ? [] : [count]);
+					const min = Math.min(...counts);
+					const range = Math.max(...counts) - min;
+					const line = week.map(({ count }, index) => {
+						if (count === undefined) return '';
+						const command = week[index - 1]?.count === undefined ? 'M' : 'L';
+						const y = range ? 42 - ((count - min) / range) * 36 : 24;
+						return `${command}${2 + index * (316 / 7)} ${y}`;
+					}).join(' ');
+					const label = ({ date, count }: { date: string; count: number }) =>
+						`${date.slice(5).replace('-', '.')} · ${number.format(count)}`;
+					const change = last.count - first.count;
+					this.querySelector('[data-change]')!.textContent = signed.format(change);
+					this.querySelector('[data-first]')!.textContent = label(first);
+					this.querySelector('[data-last]')!.textContent = label(last);
+					this.querySelector('[data-line]')!.setAttribute('d', line);
+					this.querySelector('.sparkline')!.setAttribute('aria-label',
+						`${first.date}부터 ${last.date}까지 일별 GitHub 스타 수, 순변화 ${signed.format(change)}개`);
+					chart.hidden = false;
+					status.textContent = '';
+					loaded = true;
+				} catch {
+					status.textContent = '스타 이력을 불러오지 못했습니다. 접었다 다시 열면 재시도합니다.';
+				} finally {
+					loading = false;
+				}
+			});
+		}
+	});
+</script>
+
+<style>
+	.repository {
+		display: block; margin-top: 16px;
+		border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+	}
+	.repository-row, .chart-row {
+		display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px;
+	}
+	.repository-row { padding: 4px 0; flex-wrap: nowrap; }
+	a {
+		min-width: 0; overflow-wrap: anywhere; padding: 6px 0;
+		font: 400 12px/1.5 var(--mono); color: hsl(var(--fg) / .75);
+	}
+	a:hover { text-decoration: underline; text-underline-offset: 3px; }
+	button {
+		display: inline-flex; flex: none; align-items: center; gap: 7px; min-height: 44px; margin-left: auto; padding: 0 11px;
+		border: 1px solid var(--line); border-radius: 999px; background: transparent; color: inherit;
+		cursor: pointer; font: 500 12px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap;
+	}
+	button[hidden] { display: none; }
+	button:hover, button[aria-expanded='true'] { background: var(--raised); }
+	.chevron { color: hsl(var(--fg) / .65); transition: transform .18s var(--ease); }
+	button[aria-expanded='true'] .chevron { transform: rotate(180deg); }
+	.history {
+		margin: 6px 0 10px; padding: 14px 16px;
+		border: 1px solid var(--line); border-radius: 12px; background: var(--raised);
+	}
+	.status { margin: 0; color: hsl(var(--fg) / .7); font-size: 13px; }
+	.chart-row strong { font: 500 15px var(--mono); font-variant-numeric: tabular-nums; }
+	.sparkline { display: block; width: 100%; height: 48px; margin-top: 8px; }
+	.baseline { stroke: var(--line); }
+	[data-line] { stroke: var(--accent); stroke-width: 1.5; }
+	.dates { font: 400 11px var(--mono); color: hsl(var(--fg) / .65); }
+	@media (max-width: 640px) {
+		.repository-row a { font-size: 11px; }
+	}
+</style>

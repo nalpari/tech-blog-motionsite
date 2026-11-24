@@ -4,6 +4,7 @@ description: "Next.js에서 Prisma ORM 도입과 활용 가이드"
 date: 2026-03-17T02:27:13.325Z
 tags: ["React & Nextjs"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/covers/prisma-orm-nextjs-guide-1773713552257.png"
+repository: "prisma/prisma"
 ---
 
 > **작성일:** 2025년 3월

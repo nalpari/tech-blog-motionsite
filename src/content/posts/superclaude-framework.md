@@ -4,6 +4,7 @@ description: "SuperClaude 프레임워크 16개 커맨드 활용 가이드"
 date: 2026-03-16T09:02:22.917Z
 tags: ["AI & ML"]
 cover: "https://devgrr.s3.ap-northeast-2.amazonaws.com/blog-assets/post-images/covers/superclaude-framework-1773651918565.png"
+repository: "SuperClaude-Org/SuperClaude_Framework"
 ---
 
 ## 🚀 개요
